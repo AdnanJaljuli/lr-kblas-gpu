@@ -60,6 +60,15 @@ int kblas_dara_batch(
 	int relative, int num_ops
 );
 
+// _____________________________________________________ modified code _____________________________________________________
+int lr_kblas_dara_batch(
+	kblasHandle_t handle, int tile_size, int batch_unit_size, int* rows_batch, int* cols_batch, double** U_ptrs, double** V_ptrs, int** scan_ranks,
+	double** A_batch, int* lda_batch, double** B_batch, int* ldb_batch, int* ranks_batch, 
+	float tol, int max_rows, int max_cols, int max_rank, int bs, int r, kblasRandState_t rand_state, 
+	int relative, int num_ops
+);
+// _____________________________________________________ ends _____________________________________________________
+
 // Utility routines for ara-based algorithms
 int kblas_sara_svec_count_batch(
 	double* diag_R, int bs, int* op_samples, int* ranks_batch, double* max_diag, float** Y_batch, 
@@ -183,6 +192,24 @@ inline int kblas_ara_batch(
 		ranks_batch, tol, max_rows, max_cols, max_rank, bs, r, rand_state, relative, num_ops
 	);
 }
+
+// // _____________________________________________________ modified code _____________________________________________________
+inline int lr_kblas_ara_batch(
+	kblasHandle_t handle, int tile_size, int batch_unit_size, int* rows_batch, int* cols_batch, double** U_ptrs, double** V_ptrs, int** scan_ranks,
+	double** A_batch, int* lda_batch, double** B_batch, int* ldb_batch, int* ranks_batch, 
+	float tol, int max_rows, int max_cols, int max_rank, int bs, int r, kblasRandState_t rand_state, 
+	int relative, int num_ops
+)
+{
+	return lr_kblas_dara_batch(
+		handle, tile_size, batch_unit_size, rows_batch, cols_batch, U_ptrs, V_ptrs, scan_ranks,
+		A_batch, lda_batch, B_batch, ldb_batch, ranks_batch,
+		tol, max_rows, max_cols, max_rank, bs, r, rand_state, 
+		relative, num_ops
+	);
+}
+// // _____________________________________________________ ends _____________________________________________________
+
 
 // utility routine wrappers
 inline int kblas_ara_svec_count_batch(
