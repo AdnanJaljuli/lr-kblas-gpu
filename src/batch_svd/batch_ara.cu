@@ -205,14 +205,6 @@ __global__ void lr_sampling_batched(
     int tile_size, int batch_unit_size, T** U_ptrs, T** V_ptrs, int** scan_ranks,
     T** B_batch, T** A_batch, int* samples_batch, int max_rows, int max_cols, int max_samples, int transpose) {		
 
-		if(threadIdx.x == 0 && threadIdx.y == 0 && blockIdx.x == 0 && blockIdx.y == 0 && blockIdx.z == 0) {
-			printf("max samples: %d\n", max_samples);
-			printf("%d  %d  %d  %d %d\n", tile_size, batch_unit_size, max_rows, max_cols, transpose);
-			for(unsigned int i = 0; i < 4; ++i) {
-				printf("%d ", samples_batch[i]);
-			}
-			printf("\n");
-		}
 		T outputValue = 0;
 		T sum = 0;
 
@@ -365,9 +357,6 @@ int lr_sample(int tile_size, int batch_unit_size, T** U_ptrs, T** V_ptrs, int** 
 		unsigned int numBlockCols = (max_samples + 31)/32;
 		dim3 numBlocks(numBlockCols, batch_unit_size, num_ops);
 		dim3 numThreadsPerBlock(min(32, max_samples), 32);
-		printf("numBlocks.x: %d   numBlocks.y: %d   numBlocks.z: %d\n", numBlocks.x, numBlocks.y, numBlocks.z);
-		printf("numthreadsperblock.x: %d   numthreadsperblock.y: %d\n", numThreadsPerBlock.x, numThreadsPerBlock.y);
-
 		lr_sampling_batched <T> <<< numBlocks, numThreadsPerBlock >>> (tile_size, batch_unit_size, U_ptrs, V_ptrs, scan_ranks,
     		B_batch, A_batch, samples_batch, max_rows, max_cols, max_samples, transpose);
 	}
