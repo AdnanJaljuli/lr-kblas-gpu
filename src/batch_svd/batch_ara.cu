@@ -215,15 +215,18 @@ __global__ void lr_sampling_batched(
 			unsigned int blockInBatch = blockIdx.x;
 
 			for(unsigned int tile = 0; tile < batch_unit_size; ++tile) {
-				int MOIndex = IndextoMOIndex(batch_unit_size, tile*batch_unit_size + blockInBatch);
 				int rank, scanRankVal;
+				// int MOIndex = IndextoMOIndex(batch_unit_size, tile*batch_unit_size + blockInBatch);
+				int tileIndex = tile*batch_unit_size + blockInBatch;
 				if(blockInBatch == 0 && tile == 0) {
 					rank = scan_ranks[batch][0];
 					scanRankVal = 0;
 				}
 				else {
-					rank = scan_ranks[batch][MOIndex] - scan_ranks[batch][MOIndex - 1];
-					scanRankVal = scan_ranks[batch][MOIndex - 1];
+					// rank = scan_ranks[batch][MOIndex] - scan_ranks[batch][MOIndex - 1];
+					// scanRankVal = scan_ranks[batch][MOIndex - 1];
+					rank = scan_ranks[batch][tileIndex] - scan_ranks[batch][tileIndex - 1];
+					scanRankVal = scan_ranks[batch][tileIndex - 1];
 				}
 
 				// load V and Omega into shared memory
@@ -284,15 +287,16 @@ __global__ void lr_sampling_batched(
 
 			for(unsigned int tile = 0; tile < batch_unit_size; ++tile) {
 				// multiply V by the sampling vector and store it in buffer
-				int MOIndex = IndextoMOIndex(batch_unit_size, blockIdx.y*batch_unit_size + tile);
 				int rank, scanRankVal;
+				// int MOIndex = IndextoMOIndex(batch_unit_size, blockIdx.y*batch_unit_size + tile);
+				int tileIndex = blockIdx.y*batch_unit_size + tile;
 				if(blockIdx.y == 0 && tile == 0) {
 					rank = scan_ranks[blockIdx.z][0];
 					scanRankVal = 0;
 				}
 				else {
-					rank = scan_ranks[blockIdx.z][MOIndex] - scan_ranks[blockIdx.z][MOIndex - 1];
-					scanRankVal = scan_ranks[blockIdx.z][MOIndex - 1];
+					rank = scan_ranks[blockIdx.z][tileIndex] - scan_ranks[blockIdx.z][tileIndex - 1];
+					scanRankVal = scan_ranks[blockIdx.z][tileIndex - 1];
 				}
 				if(colInBatch < samples_batch[blockIdx.z]) {
 					// load U transpose and Omega into shared memory
