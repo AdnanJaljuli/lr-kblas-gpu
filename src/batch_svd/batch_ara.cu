@@ -135,7 +135,7 @@ struct DenseSampler
 	int *ldm_batch, *rows_batch, *cols_batch;
 	kblasHandle_t handle;
 	int max_rows, max_cols;
-	
+
 	DenseSampler(T **M_batch, int *ldm_batch, int *rows_batch, int *cols_batch, int max_rows, int max_cols, kblasHandle_t handle) 
 	{
 		this->M_batch = M_batch;
@@ -228,15 +228,15 @@ __global__ void lr_sampling_batched(
 
 				// load V and Omega into shared memory
 				if(threadIdx.x < rank) {
-					shmemArray1[threadIdx.y][threadIdx.x] = V_ptrs[batch][scanRankVal*tile_size + threadIdx.x*tile_size + threadIdx.y];
+					shmemArray1[threadIdx.y][threadIdx.x] = V_ptrs[batch][(uint64_t)scanRankVal*(uint64_t)tile_size + (uint64_t)threadIdx.x*(uint64_t)tile_size + (uint64_t)threadIdx.y];
 				}
 				if(rank*2 <= max_samples) {
 					if(threadIdx.x >= max_samples - rank) {
-						shmemArray1[threadIdx.y][threadIdx.x] = U_ptrs[batch][scanRankVal*tile_size + (threadIdx.x + rank - max_samples)*tile_size + threadIdx.y];
+						shmemArray1[threadIdx.y][threadIdx.x] = U_ptrs[batch][(uint64_t)scanRankVal*(uint64_t)tile_size + (uint64_t)(threadIdx.x + rank - max_samples)*(uint64_t)tile_size + (uint64_t)threadIdx.y];
 					}
 				}
 				if(threadIdx.x < samples_batch[batch]) {
-					shmemArray2[threadIdx.y][threadIdx.x] = B_batch[batch][threadIdx.x*batch_unit_size*tile_size + tile*tile_size + threadIdx.y];
+					shmemArray2[threadIdx.y][threadIdx.x] = B_batch[batch][(uint64_t)threadIdx.x*(uint64_t)batch_unit_size*(uint64_t)tile_size + (uint64_t)tile*(uint64_t)tile_size + (uint64_t)threadIdx.y];
 				}
 				__syncthreads();
 
@@ -254,7 +254,7 @@ __global__ void lr_sampling_batched(
 				}
 				if(2*rank > max_samples) {
 					if(threadIdx.x >= max_samples - rank) {
-						shmemArray1[threadIdx.y][threadIdx.x] = U_ptrs[batch][scanRankVal*tile_size + (threadIdx.x + rank - max_samples)*tile_size + threadIdx.y];
+						shmemArray1[threadIdx.y][threadIdx.x] = U_ptrs[batch][(uint64_t)scanRankVal*(uint64_t)tile_size + (uint64_t)(threadIdx.x + rank - max_samples)*(uint64_t)tile_size + (uint64_t)threadIdx.y];
 					}
 				}
 				__syncthreads();
@@ -270,13 +270,13 @@ __global__ void lr_sampling_batched(
 				__syncthreads();
 			}
 			if(threadIdx.x < samples_batch[batch]) {
-				A_batch[batch][threadIdx.x*batch_unit_size*tile_size + blockInBatch*tile_size + threadIdx.y] = outputValue;
+				A_batch[batch][(uint64_t)threadIdx.x*(uint64_t)batch_unit_size*(uint64_t)tile_size + (uint64_t)blockInBatch*(uint64_t)tile_size + (uint64_t)threadIdx.y] = outputValue;
 			}
 		}
 		else {
-			// if(blockIdx.x >= (samples_batch[blockIdx.z] + 31)/32) {
-			// 	return;
-			// }
+			if(blockIdx.x >= (samples_batch[blockIdx.z] + 31)/32) {
+				return;
+			}
 			__shared__ T shmemArray1[32][32];
 			__shared__ T shmemArray2[32][32];
 			unsigned int colInBatch = blockIdx.x*blockDim.x + threadIdx.x;
@@ -296,10 +296,10 @@ __global__ void lr_sampling_batched(
 				}
 				if(colInBatch < samples_batch[blockIdx.z]) {
 					// load U transpose and Omega into shared memory
-					shmemArray2[threadIdx.y][threadIdx.x] = B_batch[blockIdx.z][colInBatch*batch_unit_size*tile_size + tile*tile_size + threadIdx.y];
+					shmemArray2[threadIdx.y][threadIdx.x] = B_batch[blockIdx.z][(uint64_t)colInBatch*(uint64_t)batch_unit_size*(uint64_t)tile_size + (uint64_t)tile*(uint64_t)tile_size + (uint64_t)threadIdx.y];
 				}
 				if(threadIdx.x < rank) {
-					shmemArray1[threadIdx.y][threadIdx.x] = U_ptrs[blockIdx.z][scanRankVal*tile_size + threadIdx.x*tile_size + threadIdx.y];
+					shmemArray1[threadIdx.y][threadIdx.x] = U_ptrs[blockIdx.z][(uint64_t)scanRankVal*(uint64_t)tile_size + (uint64_t)threadIdx.x*(uint64_t)tile_size + (uint64_t)threadIdx.y];
 				}
 				__syncthreads();
 
@@ -314,7 +314,7 @@ __global__ void lr_sampling_batched(
 				__syncthreads();
 
 				if(threadIdx.x < rank) {
-					shmemArray1[threadIdx.y][threadIdx.x] = V_ptrs[blockIdx.z][scanRankVal*tile_size + threadIdx.x*tile_size + threadIdx.y];
+					shmemArray1[threadIdx.y][threadIdx.x] = V_ptrs[blockIdx.z][(uint64_t)scanRankVal*(uint64_t)tile_size + (uint64_t)threadIdx.x*(uint64_t)tile_size + (uint64_t)threadIdx.y];
 				}
 				if(colInBatch < samples_batch[blockIdx.z]) {
 					if(threadIdx.y < rank) {
@@ -338,7 +338,7 @@ __global__ void lr_sampling_batched(
 				__syncthreads();
 			}
 			if(colInBatch < samples_batch[blockIdx.z]) {
-				A_batch[blockIdx.z][colInBatch*batch_unit_size*tile_size + rowInBatch] = outputValue;
+				A_batch[blockIdx.z][(uint64_t)colInBatch*(uint64_t)batch_unit_size*(uint64_t)tile_size + (uint64_t)rowInBatch] = outputValue;
 			}
 		}
 }
