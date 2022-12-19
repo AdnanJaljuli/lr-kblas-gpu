@@ -62,7 +62,8 @@ int kblas_dara_batch(
 
 // _____________________________________________________ modified code _____________________________________________________
 int lr_kblas_dara_batch(
-	kblasHandle_t handle, int tile_size, int batch_unit_size, int* rows_batch, int* cols_batch, double** U_ptrs, double** V_ptrs, int** scan_ranks,
+	kblasHandle_t handle, int tile_size, int batch_unit_size, int* rows_batch, int* cols_batch, 
+	double** U_ptrs, int* ldu_batch, double** V_ptrs, int* ldv_batch, int** scan_ranks, int ldRanks,
 	double** A_batch, int* lda_batch, double** B_batch, int* ldb_batch, int* ranks_batch, 
 	float tol, int max_rows, int max_cols, int max_rank, int bs, int r, kblasRandState_t rand_state, 
 	int relative, int num_ops
@@ -195,14 +196,16 @@ inline int kblas_ara_batch(
 
 // // _____________________________________________________ modified code _____________________________________________________
 inline int lr_kblas_ara_batch(
-	kblasHandle_t handle, int tile_size, int batch_unit_size, int* rows_batch, int* cols_batch, double** U_ptrs, double** V_ptrs, int** scan_ranks,
+	kblasHandle_t handle, int tile_size, int batch_unit_size, int* rows_batch, int* cols_batch, 
+	double** U_ptrs, int* ldu_batch, double** V_ptrs, int* ldv_batch, int** scan_ranks, int ldRanks,
 	double** A_batch, int* lda_batch, double** B_batch, int* ldb_batch, int* ranks_batch, 
 	float tol, int max_rows, int max_cols, int max_rank, int bs, int r, kblasRandState_t rand_state, 
 	int relative, int num_ops
 )
 {
 	return lr_kblas_dara_batch(
-		handle, tile_size, batch_unit_size, rows_batch, cols_batch, U_ptrs, V_ptrs, scan_ranks,
+		handle, tile_size, batch_unit_size, rows_batch, cols_batch, 
+		U_ptrs, ldu_batch, V_ptrs, ldv_batch, scan_ranks, ldRanks,
 		A_batch, lda_batch, B_batch, ldb_batch, ranks_batch,
 		tol, max_rows, max_cols, max_rank, bs, r, rand_state, 
 		relative, num_ops

@@ -373,24 +373,30 @@ template<class T>
 struct lr_DenseSampler
 {
 	T **U_ptrs, **V_ptrs;
+	int *ldu_batch, *ldv_batch;
 	int tile_size, batch_unit_size;
 	int **scan_ranks;
+	int ldRanks;
 	int *rows_batch, *cols_batch;
 	kblasHandle_t handle;
 	int max_rows, max_cols;
 
-	lr_DenseSampler(int tile_size, int batch_unit_size, T **U_ptrs, T **V_ptrs, int** scan_ranks, int *rows_batch, int *cols_batch, int max_rows, int max_cols, kblasHandle_t handle) 
-	{
-		this->tile_size = tile_size;
-		this->batch_unit_size = batch_unit_size;
-		this->U_ptrs = U_ptrs;
-		this->V_ptrs = V_ptrs;
-		this->scan_ranks = scan_ranks;
-		this->rows_batch = rows_batch;
-		this->cols_batch = cols_batch;
-		this->max_rows = max_rows;
-		this->max_cols = max_cols;
-		this->handle = handle;
+	lr_DenseSampler(
+		int tile_size, int batch_unit_size, T **U_ptrs, int *ldu_batch, T **V_ptrs, int *ldv_batch, 
+		int** scan_ranks, int ldRanks, int *rows_batch, int *cols_batch, int max_rows, int max_cols, kblasHandle_t handle) {
+			this->tile_size = tile_size;
+			this->batch_unit_size = batch_unit_size;
+			this->U_ptrs = U_ptrs;
+			this->ldu_batch = ldu_batch;
+			this->V_ptrs = V_ptrs;
+			this->ldv_batch = ldv_batch;
+			this->scan_ranks = scan_ranks;
+			this->ldRanks = ldRanks;
+			this->rows_batch = rows_batch;
+			this->cols_batch = cols_batch;
+			this->max_rows = max_rows;
+			this->max_cols = max_cols;
+			this->handle = handle;
 	}
 
 	// A = M * B or A = M' * B
@@ -634,13 +640,16 @@ int kblas_sara_batch(
 // __________________________________________MODIFIED CODE STARTS HERE_______________________________________________________________________________
 // __________________________________________________________________________________________________________________________________________________
 int lr_kblas_dara_batch(
-	kblasHandle_t handle, int tile_size, int batch_unit_size, int* rows_batch, int* cols_batch, double** U_ptrs, double** V_ptrs, int** scan_ranks,
+	kblasHandle_t handle, int tile_size, int batch_unit_size, int* rows_batch, int* cols_batch, 
+	double** U_ptrs, int* ldu_batch, double** V_ptrs, int* ldv_batch, int** scan_ranks, int ldRanks,
 	double** A_batch, int* lda_batch, double** B_batch, int* ldb_batch, int* ranks_batch, 
 	float tol, int max_rows, int max_cols, int max_rank, int bs, int r, kblasRandState_t rand_state, 
 	int relative, int num_ops
 )
 {
-	lr_DenseSampler<double> lr_dense_sampler(tile_size, batch_unit_size, U_ptrs, V_ptrs, scan_ranks, rows_batch, cols_batch, max_rows, max_cols, handle);
+	lr_DenseSampler<double> lr_dense_sampler(
+		tile_size, batch_unit_size, U_ptrs, ldu_batch, V_ptrs, ldv_batch, scan_ranks, ldRanks,
+		rows_batch, cols_batch, max_rows, max_cols, handle);
 
 	return kblas_ara_batch_template<double, lr_DenseSampler<double> >(
 		handle, rows_batch, cols_batch, lr_dense_sampler, A_batch, lda_batch, B_batch, ldb_batch, 
