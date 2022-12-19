@@ -202,7 +202,7 @@ __host__ __device__ int IndextoMOIndex(int num_segments, int n){
 
 template<class T>
 __global__ void lr_sampling_batched(
-    int tile_size, int batch_unit_size, T** U_ptrs, T** V_ptrs, int** scan_ranks,
+    int tile_size, int batch_unit_size, T** U_ptrs, int *ldu_batch, T** V_ptrs, int *ldv_batch, int** scan_ranks, int ldRanks,
     T** B_batch, T** A_batch, int* samples_batch, int max_rows, int max_cols, int max_samples, int transpose) {		
 
 		T outputValue = 0;
@@ -348,20 +348,20 @@ __global__ void lr_sampling_batched(
 }
 
 template<class T>
-int lr_sample(int tile_size, int batch_unit_size, T** U_ptrs, T** V_ptrs, int** scan_ranks, T** B_batch, int* ldb_batch, int* samples_batch, T** A_batch, int* lda_batch, int max_samples, int max_rows, int max_cols, int num_ops, int transpose) {
+int lr_sample(int tile_size, int batch_unit_size, T** U_ptrs, int *ldu_batch, T** V_ptrs, int *ldv_batch, int** scan_ranks, int ldRanks, T** B_batch, int* ldb_batch, int* samples_batch, T** A_batch, int* lda_batch, int max_samples, int max_rows, int max_cols, int num_ops, int transpose) {
 	
 	if(transpose == 0) {
 		dim3 numBlocks(batch_unit_size, num_ops);
 		dim3 numThreadsPerBlock(max_samples, 32);
 		assert(max_samples == 16);
-		lr_sampling_batched <T> <<< numBlocks, numThreadsPerBlock >>> (tile_size, batch_unit_size, U_ptrs, V_ptrs, scan_ranks,
+		lr_sampling_batched <T> <<< numBlocks, numThreadsPerBlock >>> (tile_size, batch_unit_size, U_ptrs, ldu_batch, V_ptrs, ldv_batch, scan_ranks, ldRanks,
     		B_batch, A_batch, samples_batch, max_rows, max_cols, max_samples, transpose);
 	}
 	else {
 		unsigned int numBlockCols = (max_samples + 31)/32;
 		dim3 numBlocks(numBlockCols, batch_unit_size, num_ops);
 		dim3 numThreadsPerBlock(min(32, max_samples), 32);
-		lr_sampling_batched <T> <<< numBlocks, numThreadsPerBlock >>> (tile_size, batch_unit_size, U_ptrs, V_ptrs, scan_ranks,
+		lr_sampling_batched <T> <<< numBlocks, numThreadsPerBlock >>> (tile_size, batch_unit_size, U_ptrs, ldu_batch, V_ptrs, ldv_batch, scan_ranks, ldRanks,
     		B_batch, A_batch, samples_batch, max_rows, max_cols, max_samples, transpose);
 	}
 	cudaDeviceSynchronize();
@@ -402,7 +402,7 @@ struct lr_DenseSampler
 	// A = M * B or A = M' * B
 	int sample(T** B_batch, int* ldb_batch, int* samples_batch, T** A_batch, int* lda_batch, int max_samples, int num_ops, int transpose) 
 	{
-        lr_sample(tile_size, batch_unit_size, U_ptrs, V_ptrs, scan_ranks, B_batch, ldb_batch, samples_batch, A_batch, lda_batch, max_samples, max_rows, max_cols, num_ops, transpose);
+        lr_sample(tile_size, batch_unit_size, U_ptrs, ldu_batch, V_ptrs, ldv_batch, scan_ranks, ldRanks, B_batch, ldb_batch, samples_batch, A_batch, lda_batch, max_samples, max_rows, max_cols, num_ops, transpose);
 		return 1;
 	}
 };
